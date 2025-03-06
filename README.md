@@ -1,3 +1,3 @@
-# jaxafed.github.io
+# github.io
 
 https://AlekseySor.github.io
