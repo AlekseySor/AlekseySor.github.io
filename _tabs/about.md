@@ -4,5 +4,5 @@ icon: fas fa-info-circle
 order: 4
 ---
 
-###  Приыет, я AlekseySor.
+###  Привет, я AlekseySor.
 По вопросам сотрудничества: lexacfryazino@yandex.ru
